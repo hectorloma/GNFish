@@ -17,10 +17,16 @@ class GenomeDownloader(object):
     """Downloads genomes, RNA and proteins from NCBI."""
 
     # FIXME Does having the genomic option actually makes sense ?
-    def __init__(self, working_dir, email, query, rna, protein, exclusive, retmax, refine):
+    def __init__(
+        self, working_dir, email, query, rna, protein, exclusive, retmax, refine
+    ):
         self.working_dir = Path(working_dir)
-        params_to_log = {key: value for key, value in locals().items() if value is not None}
-        logger.info(f"Running --{params_to_log} argument. Check help or README file for further information.")
+        params_to_log = {
+            key: value for key, value in locals().items() if value is not None
+        }
+        logger.info(
+            f"Running --{params_to_log} argument. Check help or README file for further information."
+        )
         data_lst = []
         self.db = "assembly"
         self.data_dir = self.working_dir / "Data/"
@@ -61,13 +67,17 @@ class GenomeDownloader(object):
             log_file_data = pd.read_csv(self.log_file, sep="\t")
             log_file_data["Assembly_ID"] = log_file_data["Assembly_ID"].astype(str)
         else:
-            log_file_data = pd.DataFrame(columns=["Species", "Assembly_ID", "Genomic", "Rna", "Protein"])
+            log_file_data = pd.DataFrame(
+                columns=["Species", "Assembly_ID", "Genomic", "Rna", "Protein"]
+            )
 
         return log_file_data
 
     def get_record_entrez(self, final_query):
         Entrez.email = self.email
-        handle = Entrez.esearch(db=self.db, term=final_query, retmax=self.retmax, sort="Significance")
+        handle = Entrez.esearch(
+            db=self.db, term=final_query, retmax=self.retmax, sort="Significance"
+        )
         record = Entrez.read(handle)
         handle.close()
         return record
@@ -85,7 +95,9 @@ class GenomeDownloader(object):
         if not url:
             url = summary["DocumentSummarySet"]["DocumentSummary"][0]["FtpPath_GenBank"]
         if not url:
-            logger.warning(f"No available {db} data for {species}. Check {species} in 'https://www.ncbi.nlm.nih.gov/'")
+            logger.warning(
+                f"No available {self.db} data for {species}. Check {species} in 'https://www.ncbi.nlm.nih.gov/'"
+            )
             return None, None
         else:
             return species, url
@@ -107,7 +119,10 @@ class GenomeDownloader(object):
             directory = data_type.capitalize() + "/" + species
             dir_path = self.data_dir / directory
             dir_path.mkdir()
-            urllib.request.urlretrieve(link, "%s/%s" % (dir_path, species + "_" + id_num + "_" + data_type + ext))
+            urllib.request.urlretrieve(
+                link,
+                "%s/%s" % (dir_path, species + "_" + id_num + "_" + data_type + ext),
+            )
             return True
         except:
             dir_path = self.data_dir / directory
@@ -117,7 +132,7 @@ class GenomeDownloader(object):
             )
             return False
 
-    def print_already_downloaded_info(self, data_typeo, species, id_num):
+    def print_already_downloaded_info(self, data_type, species, id_num):
         logger.info(
             f"{data_type.capitalize()} data for {species} {id_num} is already downloaded. Check Data/{data_type.capitalize()} directory."
         )
@@ -131,7 +146,9 @@ class GenomeDownloader(object):
         downloaded = False
 
         for data_type in self.data_lst:
-            result = self.log_file_data.loc[self.log_file_data["Assembly_ID"] == id_num, data_type.capitalize()]
+            result = self.log_file_data.loc[
+                self.log_file_data["Assembly_ID"] == id_num, data_type.capitalize()
+            ]
             if result.iloc[0] == 0:
                 downloaded = self.get_assembly_data(url, species, id_num, data_type)
             elif result.iloc[0] > 0:
@@ -140,12 +157,19 @@ class GenomeDownloader(object):
                 not self.exclusive
                 and data_type != "genomic"
                 and not downloaded
-                and int(self.log_file_data.loc[self.log_file_data["Assembly_ID"] == id_num, "Genomic"].iloc[0]) == 0
+                and int(
+                    self.log_file_data.loc[
+                        self.log_file_data["Assembly_ID"] == id_num, "Genomic"
+                    ].iloc[0]
+                )
+                == 0
             ):
                 data_type = "genomic"
                 downloaded = self.get_assembly_data(url, species, id_num, data_type)
             if downloaded:
-                self.log_file_data.loc[self.log_file_data["Assembly_ID"] == id_num, data_type.capitalize()] = 1
+                self.log_file_data.loc[
+                    self.log_file_data["Assembly_ID"] == id_num, data_type.capitalize()
+                ] = 1
                 self.print_successful_download("genomic", species, id_num)
 
     def fetch_ncbi(self):
@@ -187,7 +211,9 @@ class GenomeDownloader(object):
 
 
 @click.command()
-@click.argument("working_dir", type=click.Path(exists=True, dir_okay=True), required=True)
+@click.argument(
+    "working_dir", type=click.Path(exists=True, dir_okay=True), required=True
+)
 @click.argument(
     "email",
     type=click.STRING,
@@ -232,5 +258,7 @@ def main(working_dir, email, query, rna, protein, exclusive, retmax, refine):
         QUERY path to the file with your queries.
     """
 
-    gd = GenomeDownloader(working_dir, email, query, rna, protein, exclusive, retmax, refine)
+    gd = GenomeDownloader(
+        working_dir, email, query, rna, protein, exclusive, retmax, refine
+    )
     gd.fetch_ncbi()
